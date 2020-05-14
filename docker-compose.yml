@@ -1,0 +1,24 @@
+version: '3'
+services:
+    frontend:
+        stdin_open: true
+        tty: true 
+        build: 
+            context: .
+            dockerfile: Dockerfile.dev
+        ports: 
+            - "3000:3000"
+        volumes: 
+            - /app/node_modules
+            - .:/app
+    tests: # cu docker-compose up build acum se creaza si cel de-al doilea container pt. teste
+        stdin_open: true 
+        # stdout: true
+        tty: true 
+        build: 
+            context: .
+            dockerfile: Dockerfile.dev
+        volumes:
+            - /app/node_modules # sa nu suprascriem sau sa modificam acest folder
+            - .:/app # mapam folderul curent<.> in folder </app> din container
+        command: ["npm", "run", "test"] # suprascriem comanda din Dockerfile.dev <CMD ["npm", "run", "start"]>

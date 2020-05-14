@@ -1,0 +1,117 @@
+1. create Dockerfile.dev
+
+2.
+FROM node:alpine
+
+WORKDIR '/app'
+
+COPY package.json .
+RUN npm install
+
+COPY . . 
+
+CMD ["npm", "run", "start"]
+
+
+3. delete node_modules from current project
+
+4. docker build -f Dockerfile.dev .
+
+5. Successfully built 72e0539ec2c3
+
+6. docker run 72e0539ec2c3
+
+7. docker run -p 3000:3000 -v /app/node_modules -v $(pwd):/app b689a7512785
+
+8. putem automatiza cu docker-compose.yml
+version: '3'
+services:
+    frontend:
+        stdin_open: true
+        tty: true 
+        build: 
+            context: .
+            dockerfile: Dockerfile.dev
+        ports: 
+            - "3000:3000"
+        volumes: 
+            - /app/node_modules
+            - .:/app
+
+9. rulam containerul 
+docker-compose up
+
+9.1 sau:
+-> docker ps, luam id-ul containerului de react daca acesta deja ruleaza
+
+10. ca sa rulam teste in paralel copiem id-ul containerului de react
+docker exec -it ec80a8d502e0 npm run test
+
+11. Ca alernativa creem un nou "services" in docker-compose.yml"
+version: '3'
+services:
+    frontend:
+        stdin_open: true
+        tty: true 
+        build: 
+            context: .
+            dockerfile: Dockerfile.dev
+        ports: 
+            - "3000:3000"
+        volumes: 
+            - /app/node_modules
+            - .:/app
+    tests: # cu docker-compose up acum se creaza si cel de-al doilea container pt. teste
+        build: 
+            context: .
+            dockerfile: Dockerfile.dev
+        volumes:
+            - /app/node_modules # sa nu suprascriem sau sa modificam acest folder
+            - .:/app # mapam folderul curent<.> in folder /app din container
+        command: ["npm", "run", "test"] # suprascriem comanda din Dockerfile.dev <CMD ["npm", "run", "start"]>
+
+12. docker-compose build
+-> Successfully built 531c3c4281cf
+
+13. luam id-ul <531c3c4281cf>
+
+14. docker-compose up
+
+15. pt. a putea manual sa dam refresh la teste cu <enter, q, p> si alte comenzi din terminal, luam container id-ul
+-> docker exec -it <container_id> sh
+
+16. -> ps
+
+17 ->  node /app/node_modules/.bin/react-scripts test
+si avem
+Watch Usage
+ › Press f to run only failed tests.
+ › Press o to only run tests related to changed files.
+ › Press q to quit watch mode.
+ › Press p to filter by a filename regex pattern.
+ › Press t to filter by a test name regex pattern.
+ › Press Enter to trigger a test run.
+
+18. Facem un Dockerfile pt. build care contine doua faze, build si run
+
+1. build phase
+# build faze
+FROM node:alpine as builder
+WORKDIR './app'
+COPY package.json .
+RUN npm install
+COPY . .
+RUN npm run build
+
+2. # run phase based from nginx and build pahse
+FROM nginx
+# copy from build folder in react, dist in andular to nginx server, this will run autamatically
+COPY --from=builder /appbuild /usr/share/nginx/html
+
+
+3. docker build .
+
+4. luam id-ul containerului
+-> Successfully built f8b2a5c58222
+
+5. docker run -p 8090:80 f8b2a5c58222
